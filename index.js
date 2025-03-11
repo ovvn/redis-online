@@ -57,8 +57,26 @@ onlineTracker.prototype.getOnline = function(time, prefix, cb){
 
   if(!this._init) this.init();
   if (!this.client) return cb && cb('No redis connection!');
+
   var keys = this.getTimeKeys(time, prefix);
-  this.client.sunion(keys, cb);
+  var luaScript = `
+    local union = {}
+    for i, key in ipairs(KEYS) do
+      local set = redis.call('SMEMBERS', key)
+      for j, member in ipairs(set) do
+        union[member] = true
+      end
+    end
+    local result = {}
+    for k, _ in pairs(union) do
+      table.insert(result, k)
+    end
+    return result
+  `;
+
+  this.client.eval(luaScript, keys.length, keys, function(err, result) {
+    cb(err, result);
+  });
 };
 
 onlineTracker.prototype.isOnline = function(userId, prefix, cb){
