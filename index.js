@@ -74,7 +74,7 @@ onlineTracker.prototype.getOnline = function(time, prefix, cb){
     return result
   `;
 
-  this.client.eval(luaScript, keys.length, keys, function(err, result) {
+  this.client.eval([luaScript, keys.length, ...keys], function(err, result) {
     cb(err, result);
   });
 };
